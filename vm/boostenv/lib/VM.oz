@@ -27,18 +27,20 @@ functor
 require
    Boot_VM at 'x-oz://boot/VM'
 
+import
+   Pickle % used for VM ports
+
 export
    Current
    New
+   Stream
 
 define
 
-   fun {Current}
-      {Boot_VM.current}
-   end
+   Current = Boot_VM.current
+   New = Boot_VM.new
+   Stream = Boot_VM.stream
 
-   fun {New AppURL}
-      {Boot_VM.new AppURL}
-   end
-
+   % Let's load Pickle since we need it for VM Ports
+   {Wait Pickle}
 end
