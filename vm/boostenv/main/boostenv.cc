@@ -284,12 +284,11 @@ void BoostBasedVM::sendToVMPort(VM vm, VM to, RichNode value) {
     raiseError(vm, "Could not find property pickle.pack");
 
   UnstableNode vbs;
-  RichNode rvbs = RichNode(vbs);
-  ozcalls::ozCall(vm, "mozart::boostenv::BoostBasedVM::sendToVMPort", picklePack, value, rvbs);
+  ozcalls::ozCall(vm, "mozart::boostenv::BoostBasedVM::sendToVMPort", picklePack, value, ::mozart::ozcalls::out(vbs));
 
   size_t bufSize = ozVBSLengthForBuffer(vm, vbs);
   // allocates the vector in a neutral zone: the heap
-  std::vector<unsigned char> *buffer = new std::vector<unsigned char>(bufSize);
+  std::vector<unsigned char> *buffer = new std::vector<unsigned char>();
   ozVBSGet(vm, vbs, bufSize, *buffer);
 
   BoostVM::forVM(to).postVMEvent([=] () {
