@@ -240,16 +240,17 @@ void BoostVM::sendOnVMPort(VMIdentifier to, RichNode value) {
 
   std::ostringstream out;
   pickle(vm, value, out);
-  // allocates the buffer in a neutral zone: the heap
-  std::string* buffer = new std::string(out.str());
 
-  bool found = env.findVM(to, [buffer] (BoostVM& targetVM) {
+  // TODO: make this a unique_ptr when we have C++14
+  //       lambda generalized capture buffer{std::move(buffer)}
+  // allocates the buffer in a neutral zone: the heap
+  auto buffer = std::make_shared<std::string>(out.str());
+
+  env.findVM(to, [&buffer] (BoostVM& targetVM) {
     targetVM.postVMEvent([buffer,&targetVM] () {
-      targetVM.receiveOnVMStream(buffer);
+      targetVM.receiveOnVMStream(std::move(buffer));
     });
   });
-  if (!found)
-    delete buffer;
 }
 
 void BoostVM::receiveOnVMStream(RichNode value) {
@@ -257,15 +258,12 @@ void BoostVM::receiveOnVMStream(RichNode value) {
     sendToReadOnlyStream(vm, _stream, value);
 }
 
-void BoostVM::receiveOnVMStream(std::string* buffer) {
-  if (portClosed()) {
-    delete buffer;
+void BoostVM::receiveOnVMStream(std::shared_ptr<std::string> buffer) {
+  if (portClosed())
     return;
-  }
 
   std::istringstream input(*buffer);
   UnstableNode unpickled = unpickle(vm, input);
-  delete buffer;
 
   sendToReadOnlyStream(vm, _stream, unpickled);
 }
