@@ -24,6 +24,7 @@
 
 #include "boostenv.hh"
 
+#include <csignal>
 #include <exception>
 #include <boost/bind.hpp>
 #include <boost/random/random_device.hpp>
@@ -280,6 +281,16 @@ void BoostVM::addMonitor(VMIdentifier monitor) {
   _monitors.push_back(monitor);
 }
 
+void BoostVM::addChildProcess(nativeint pid) {
+  _childProcesses.push_back(pid);
+}
+
+void BoostVM::killChildProcesses() {
+  for (auto pid : _childProcesses) {
+    kill(pid, SIGTERM);
+  }
+}
+
 void BoostVM::notifyMonitors() {
   VMIdentifier deadVM = this->identifier;
   std::string reason = this->_terminationReason;
@@ -300,6 +311,7 @@ void BoostVM::terminate() {
   alarmTimer.cancel();
 
   portClosed = true; // close VM port
+  killChildProcesses();
   notifyMonitors();
 
   env.removeTerminatedVM(identifier, _terminationStatus, _work);

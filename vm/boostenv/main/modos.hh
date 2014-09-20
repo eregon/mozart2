@@ -881,8 +881,7 @@ public:
       vm->deleteStaticArray(argv, argc);
 
       if (doKill) {
-        // TODO
-        // addChildProc(pid);
+        BoostVM::forVM(vm).addChildProcess(pid);
       }
 
       outPid = build(vm, pid);
@@ -995,8 +994,7 @@ public:
 
       vm->deleteStaticArray(argv, argc);
 
-      // TODO
-      // addChildProc(pid);
+      BoostVM::forVM(vm).addChildProcess(pid);
 
       outPid = build(vm, pid);
       outStatus = buildSharp(vm, rsock, wsock);
@@ -1083,8 +1081,7 @@ public:
 
           vm->deleteStaticArray(argv, argc);
 
-          // TODO
-          // addChildProc(pid);
+          BoostVM::forVM(vm).addChildProcess(pid);
 
           outPid = build(vm, pid);
           outStatus = std::move(ozPipe);
