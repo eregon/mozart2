@@ -28,6 +28,13 @@
 
 using namespace clang;
 
+void withRaw(std::ostream& out, std::function<void(llvm::raw_ostream&)> callback) {
+  std::string str;
+  llvm::raw_string_ostream stream(str);
+  callback(stream);
+  out << stream.str();
+}
+
 std::string basicTypeToString(QualType type) {
   if (isa<TagType>(type.getTypePtr()))
     return dyn_cast<TagType>(type.getTypePtr())->getDecl()->getNameAsString();
@@ -97,7 +104,7 @@ bool existsBaseClassSuchThat(
   return false;
 }
 
-void printTemplateParameters(llvm::raw_fd_ostream& Out,
+void printTemplateParameters(std::ostream& Out,
   const TemplateParameterList *Params, const TemplateArgumentList *Args) {
 
   assert(Params);
@@ -129,7 +136,9 @@ void printTemplateParameters(llvm::raw_fd_ostream& Out,
 
       if (Args) {
         Out << " = ";
-        Args->get(i).print(Policy, Out);
+        withRaw(Out, [&] (llvm::raw_ostream &raw) {
+          Args->get(i).print(Policy, raw);
+        });
       } else if (TTP->hasDefaultArgument()) {
         Out << " = ";
         Out << TTP->getDefaultArgument().getAsString(Policy);
@@ -143,16 +152,19 @@ void printTemplateParameters(llvm::raw_fd_ostream& Out,
 
       if (IdentifierInfo *Name = NTTP->getIdentifier()) {
         Out << ' ';
-        Out << Name->getName();
+        withRaw(Out, [&] (llvm::raw_ostream &raw) { raw << Name->getName(); });
       }
 
       if (Args) {
         Out << " = ";
-        Args->get(i).print(Policy, Out);
+        withRaw(Out, [&] (llvm::raw_ostream &raw) {
+          Args->get(i).print(Policy, raw);
+        });
       } else if (NTTP->hasDefaultArgument()) {
         Out << " = ";
-        NTTP->getDefaultArgument()->printPretty(Out, 0, Policy,
-                                                Indentation);
+        withRaw(Out, [&] (llvm::raw_ostream &raw) {
+          NTTP->getDefaultArgument()->printPretty(raw, 0, Policy, Indentation);
+        });
       }
     } else if (const TemplateTemplateParmDecl *TTPD =
                  dyn_cast<TemplateTemplateParmDecl>(Param)) {
@@ -164,7 +176,7 @@ void printTemplateParameters(llvm::raw_fd_ostream& Out,
   Out << "> ";
 }
 
-void printActualTemplateParameters(llvm::raw_fd_ostream& Out,
+void printActualTemplateParameters(std::ostream& Out,
   const TemplateParameterList *Params, const TemplateArgumentList *Args) {
 
   assert(Params);
@@ -191,7 +203,7 @@ void printActualTemplateParameters(llvm::raw_fd_ostream& Out,
                  dyn_cast<NonTypeTemplateParmDecl>(Param)) {
       if (IdentifierInfo *Name = NTTP->getIdentifier()) {
         Out << ' ';
-        Out << Name->getName();
+        withRaw(Out, [&] (llvm::raw_ostream &raw) { raw << Name->getName(); });
       }
 
       if (NTTP->isParameterPack() && !isa<PackExpansionType>(NTTP->getType()))

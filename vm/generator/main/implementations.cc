@@ -115,9 +115,9 @@ struct ImplementationDef {
     }
   }
 
-  void makeOutputDeclBefore(llvm::raw_fd_ostream& to);
-  void makeOutputDeclAfter(llvm::raw_fd_ostream& to);
-  void makeOutput(llvm::raw_fd_ostream& to);
+  void makeOutputDeclBefore(std::ostream& to);
+  void makeOutputDeclAfter(std::ostream& to);
+  void makeOutput(std::ostream& to);
 
   std::string name;
   std::string copyable;
@@ -139,9 +139,9 @@ struct ImplementationDef {
   bool autoSClone;
   std::vector<ImplemMethodDef> methods;
 private:
-  void makeContentsOfAutoGCollect(llvm::raw_fd_ostream& to,
+  void makeContentsOfAutoGCollect(std::ostream& to,
                                   bool toStableNode);
-  void makeContentsOfAutoSClone(llvm::raw_fd_ostream& to,
+  void makeContentsOfAutoSClone(std::ostream& to,
                                 bool toStableNode);
 
   bool requiresStableNodeInGR() {
@@ -285,16 +285,16 @@ void handleImplementation(const std::string& outputDir, const ClassDecl* CD) {
 
   // Write output
   withFileOutputStream(outputDir + name + "-implem-decl.hh",
-    [&] (ostream& to) { definition.makeOutputDeclBefore(to); });
+    [&] (std::ostream& to) { definition.makeOutputDeclBefore(to); });
 
   withFileOutputStream(outputDir + name + "-implem-decl-after.hh",
-    [&] (ostream& to) { definition.makeOutputDeclAfter(to); });
+    [&] (std::ostream& to) { definition.makeOutputDeclAfter(to); });
 
   withFileOutputStream(outputDir + name + "-implem.hh",
-    [&] (ostream& to) { definition.makeOutput(to); });
+    [&] (std::ostream& to) { definition.makeOutput(to); });
 }
 
-void ImplementationDef::makeOutputDeclBefore(llvm::raw_fd_ostream& to) {
+void ImplementationDef::makeOutputDeclBefore(std::ostream& to) {
   to << "class " << name << ";\n";
 
   if (storageKind != skDefault) {
@@ -307,7 +307,7 @@ void ImplementationDef::makeOutputDeclBefore(llvm::raw_fd_ostream& to) {
   }
 }
 
-void ImplementationDef::makeOutputDeclAfter(llvm::raw_fd_ostream& to) {
+void ImplementationDef::makeOutputDeclAfter(std::ostream& to) {
   to << "template <>\n";
   to << "class TypeInfoOf<" << name << ">: public " << base << " {\n";
   to << "\n";
@@ -420,7 +420,7 @@ void ImplementationDef::makeOutputDeclAfter(llvm::raw_fd_ostream& to) {
   to << "};\n";
 }
 
-void ImplementationDef::makeOutput(llvm::raw_fd_ostream& to) {
+void ImplementationDef::makeOutput(std::ostream& to) {
   std::string className = std::string("TypeInfoOf<") + name + ">";
 
   std::string access = "_self.access<" + name + ">().";
@@ -542,7 +542,7 @@ void ImplementationDef::makeOutput(llvm::raw_fd_ostream& to) {
   }
 }
 
-void ImplementationDef::makeContentsOfAutoGCollect(llvm::raw_fd_ostream& to,
+void ImplementationDef::makeContentsOfAutoGCollect(std::ostream& to,
                                                    bool toStableNode) {
   to << "  assert(from.type() == type());\n";
 
@@ -560,7 +560,7 @@ void ImplementationDef::makeContentsOfAutoGCollect(llvm::raw_fd_ostream& to,
   to << "gc, from.access<" << name << ">());\n";
 }
 
-void ImplementationDef::makeContentsOfAutoSClone(llvm::raw_fd_ostream& to,
+void ImplementationDef::makeContentsOfAutoSClone(std::ostream& to,
                                                  bool toStableNode) {
   to << "  assert(from.type() == type());\n";
 

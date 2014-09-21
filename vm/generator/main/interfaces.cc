@@ -36,7 +36,7 @@ struct InterfaceDef {
     autoReflectiveCalls = true;
   }
 
-  void makeOutput(const SpecDecl* ND, llvm::raw_fd_ostream& to);
+  void makeOutput(const SpecDecl* ND, std::ostream& to);
 
   std::string name;
   const TemplateSpecializationType* implems;
@@ -67,10 +67,10 @@ void handleInterface(const std::string& outputDir, const SpecDecl* ND) {
 
   // Write output
   withFileOutputStream(outputDir + name + "-interf.hh",
-    [&] (ostream& to) { definition.makeOutput(ND, to); });
+    [&] (std::ostream& to) { definition.makeOutput(ND, to); });
 }
 
-void InterfaceDef::makeOutput(const SpecDecl* ND, llvm::raw_fd_ostream& to) {
+void InterfaceDef::makeOutput(const SpecDecl* ND, std::ostream& to) {
   to << "class "<< name << " {\n";
   to << "public:\n";
   to << "  " << name << "(RichNode self) : _self(self) {}\n";

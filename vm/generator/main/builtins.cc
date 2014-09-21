@@ -33,7 +33,7 @@ enum ParamKind {
 struct BuiltinParam {
   BuiltinParam(): kind(pkIn) {}
 
-  void makeOutput(llvm::raw_fd_ostream& to);
+  void makeOutput(std::ostream& to);
 
   ParamKind kind;
   std::string name;
@@ -57,10 +57,10 @@ struct BuiltinDef {
   inline
   void initFullCppGetter();
 
-  void makeOutput(llvm::raw_fd_ostream& to);
-  void makeEmulateInlinesOutput(llvm::raw_fd_ostream& to);
-  void makeBuiltinDefsOutput(llvm::raw_fd_ostream& header,
-                             llvm::raw_fd_ostream& code);
+  void makeOutput(std::ostream& to);
+  void makeEmulateInlinesOutput(std::ostream& to);
+  void makeBuiltinDefsOutput(std::ostream& header,
+                             std::ostream& code);
 
   ModuleDef& module;
 
@@ -83,10 +83,10 @@ struct ModuleDef {
     nameExpr = nullptr;
   }
 
-  void makeOutput(llvm::raw_fd_ostream& to);
-  void makeEmulateInlinesOutput(llvm::raw_fd_ostream& to);
-  void makeBuiltinDefsOutput(llvm::raw_fd_ostream& header,
-                             llvm::raw_fd_ostream& code);
+  void makeOutput(std::ostream& to);
+  void makeEmulateInlinesOutput(std::ostream& to);
+  void makeBuiltinDefsOutput(std::ostream& header,
+                             std::ostream& code);
 
   const ClassDecl* classDecl;
   std::string cppName;
@@ -194,9 +194,9 @@ void handleBuiltin(BuiltinDef& definition, const ClassDecl* CD) {
 }
 
 void handleBuiltinModule(const std::string& outputDir, const ClassDecl* CD,
-                         llvm::raw_fd_ostream& builtinHeaderFile,
-                         llvm::raw_fd_ostream& builtinCodeFile,
-                         llvm::raw_fd_ostream* emulateInlinesTo) {
+                         std::ostream& builtinHeaderFile,
+                         std::ostream& builtinCodeFile,
+                         std::ostream* emulateInlinesTo) {
   std::string name = CD->getNameAsString();
 
   ModuleDef definition(CD);
@@ -223,9 +223,8 @@ void handleBuiltinModule(const std::string& outputDir, const ClassDecl* CD,
   }
 
   {
-    std::string err;
-    llvm::raw_fd_ostream to((outputDir+name+"-builtin.json").c_str(), err);
-    assert(err == "");
+    std::ofstream to(outputDir+name+"-builtin.json");
+    assert(to.good());
     definition.makeOutput(to);
   }
 
@@ -235,7 +234,14 @@ void handleBuiltinModule(const std::string& outputDir, const ClassDecl* CD,
     definition.makeEmulateInlinesOutput(*emulateInlinesTo);
 }
 
-void BuiltinParam::makeOutput(llvm::raw_fd_ostream& to) {
+void printPretty(const Stmt *stmt, std::ostream& out) {
+  std::string str;
+  llvm::raw_string_ostream stream(str);
+  stmt->printPretty(stream, nullptr, context->getPrintingPolicy());
+  out << stream.str();
+}
+
+void BuiltinParam::makeOutput(std::ostream& to) {
   to << "        {\n";
   to << "          \"name\": \"" << name << "\",\n";
 
@@ -249,13 +255,13 @@ void BuiltinParam::makeOutput(llvm::raw_fd_ostream& to) {
   to << "        }";
 }
 
-void BuiltinDef::makeOutput(llvm::raw_fd_ostream& to) {
+void BuiltinDef::makeOutput(std::ostream& to) {
   to << "    {\n";
   to << "      \"fullCppName\": \"" << fullCppName << "\",\n";
   to << "      \"fullCppGetter\": \"" << fullCppGetter << "\",\n";
 
   to << "      \"name\": ";
-  nameExpr->printPretty(to, nullptr, context->getPrintingPolicy());
+  printPretty(nameExpr, to);
   to << ",\n";
 
   to << "      \"inlineable\": " << b2s(inlineable) << ",\n";
@@ -273,12 +279,12 @@ void BuiltinDef::makeOutput(llvm::raw_fd_ostream& to) {
   to << "    }";
 }
 
-void ModuleDef::makeOutput(llvm::raw_fd_ostream& to) {
+void ModuleDef::makeOutput(std::ostream& to) {
   to << "{\n";
   to << "  \"fullCppName\": \"" << fullCppName << "\",\n";
 
   to << "  \"name\": ";
-  nameExpr->printPretty(to, nullptr, context->getPrintingPolicy());
+  printPretty(nameExpr, to);
   to << ",\n";
 
   to << "  \"builtins\": [\n";
@@ -293,7 +299,7 @@ void ModuleDef::makeOutput(llvm::raw_fd_ostream& to) {
   to << "}\n";
 }
 
-void BuiltinDef::makeEmulateInlinesOutput(llvm::raw_fd_ostream& to) {
+void BuiltinDef::makeEmulateInlinesOutput(std::ostream& to) {
   if (!inlineable)
     return;
 
@@ -311,13 +317,13 @@ void BuiltinDef::makeEmulateInlinesOutput(llvm::raw_fd_ostream& to) {
   to << "}\n";
 }
 
-void ModuleDef::makeEmulateInlinesOutput(llvm::raw_fd_ostream& to) {
+void ModuleDef::makeEmulateInlinesOutput(std::ostream& to) {
   for (auto iter = builtins.begin(); iter != builtins.end(); ++iter)
     iter->makeEmulateInlinesOutput(to);
 }
 
-void BuiltinDef::makeBuiltinDefsOutput(llvm::raw_fd_ostream& header,
-                                       llvm::raw_fd_ostream& code) {
+void BuiltinDef::makeBuiltinDefsOutput(std::ostream& header,
+                                       std::ostream& code) {
   header << "  struct " << cppName << " {\n";
   header << "    static ::mozart::builtins::BaseBuiltin& get(VM vm);\n";
   header << "  };\n";
@@ -329,8 +335,8 @@ void BuiltinDef::makeBuiltinDefsOutput(llvm::raw_fd_ostream& header,
   code << "}\n";
 }
 
-void ModuleDef::makeBuiltinDefsOutput(llvm::raw_fd_ostream& header,
-                                      llvm::raw_fd_ostream& code) {
+void ModuleDef::makeBuiltinDefsOutput(std::ostream& header,
+                                      std::ostream& code) {
   header << "\nnamespace biref {\n\n";
   header << "void registerBuiltin" << cppName << "(::mozart::VM vm);\n";
   header << "\n}\n";
@@ -341,12 +347,12 @@ void ModuleDef::makeBuiltinDefsOutput(llvm::raw_fd_ostream& header,
   code << "\nclass " << cppName << ": public BuiltinModule {\n";
   code << "public:\n";
   code << "  " << cppName << "(VM vm): BuiltinModule(vm, ";
-  nameExpr->printPretty(code, nullptr, context->getPrintingPolicy());
+  printPretty(nameExpr, code);
   code << ") {\n";
 
   for (auto iter = builtins.begin(); iter != builtins.end(); ++iter) {
     code << "    instance" << iter->cppName << ".setModuleName(";
-    nameExpr->printPretty(code, nullptr, context->getPrintingPolicy());
+    printPretty(nameExpr, code);
     code << ");\n";
   }
 
@@ -356,7 +362,7 @@ void ModuleDef::makeBuiltinDefsOutput(llvm::raw_fd_ostream& header,
   size_t i = 0;
   for (auto iter = builtins.begin(); iter != builtins.end(); ++iter, ++i) {
     code << "    fields[" << i << "].feature = build(vm, ";
-    iter->nameExpr->printPretty(code, nullptr, context->getPrintingPolicy());
+    printPretty(iter->nameExpr, code);
     code << ");\n";
 
     code << "    fields[" << i << "].value = build(vm, instance"

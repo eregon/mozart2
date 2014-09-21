@@ -24,6 +24,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <functional>
 #include <string>
 
@@ -33,31 +34,25 @@
 typedef clang::ClassTemplateSpecializationDecl SpecDecl;
 typedef clang::CXXRecordDecl ClassDecl;
 
-typedef llvm::raw_fd_ostream ostream;
-
 inline
-void checkErrString(const std::string& err) {
-  if (!err.empty()) {
-    llvm::errs() << err << "\n";
+std::unique_ptr<std::ostream> openFileOutputStream(const std::string& fileName) {
+  auto result = std::unique_ptr<std::ostream>(new std::ofstream(fileName));
+  if (!result->good()) {
+    std::cerr << "Could not open " << fileName << std::endl;
     exit(1);
   }
-}
-
-inline
-std::unique_ptr<ostream> openFileOutputStream(const std::string& fileName) {
-  std::string err;
-  auto result = std::unique_ptr<ostream>(new ostream(fileName.c_str(), err));
-  checkErrString(err);
 
   return result;
 }
 
 inline
 void withFileOutputStream(const std::string& fileName,
-                          std::function<void (ostream&)> body) {
-  std::string err;
-  ostream stream(fileName.c_str(), err);
-  checkErrString(err);
+                          std::function<void (std::ostream&)> body) {
+  std::ofstream stream(fileName);
+  if (!stream.good()) {
+    std::cerr << "Could not open " << fileName << std::endl;
+    exit(1);
+  }
 
   body(stream);
 }
@@ -79,11 +74,11 @@ std::string getTypeParamAsString(const SpecDecl* specDecl,
 std::string getTypeParamAsString(clang::CXXRecordDecl* arg,
                                  bool basicName = true);
 
-void printTemplateParameters(llvm::raw_fd_ostream& Out,
+void printTemplateParameters(std::ostream& Out,
   const clang::TemplateParameterList *Params,
   const clang::TemplateArgumentList *Args = 0);
 
-void printActualTemplateParameters(llvm::raw_fd_ostream& Out,
+void printActualTemplateParameters(std::ostream& Out,
   const clang::TemplateParameterList *Params,
   const clang::TemplateArgumentList *Args = 0);
 
@@ -146,8 +141,8 @@ void handleInterface(const std::string& outputDir, const SpecDecl* ND);
 
 bool isModuleClass(const ClassDecl* cls);
 void handleBuiltinModule(const std::string& outputDir, const ClassDecl* CD,
-                         llvm::raw_fd_ostream& builtinHeaderFile,
-                         llvm::raw_fd_ostream& builtinCodeFile,
-                         llvm::raw_fd_ostream* emulateInlinesTo);
+                         std::ostream& builtinHeaderFile,
+                         std::ostream& builtinCodeFile,
+                         std::ostream* emulateInlinesTo);
 
 extern clang::ASTContext* context;

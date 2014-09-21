@@ -41,9 +41,9 @@ bool baseIsNotModule(const CXXRecordDecl* base, void* data) {
 }
 
 void processDeclContext(const std::string outputDir, const DeclContext* ds,
-                        llvm::raw_fd_ostream* builtinHeaderFile,
-                        llvm::raw_fd_ostream* builtinCodeFile,
-                        llvm::raw_fd_ostream* emulateInlineTo) {
+                        std::ostream* builtinHeaderFile,
+                        std::ostream* builtinCodeFile,
+                        std::ostream* emulateInlineTo) {
   for (auto iter = ds->decls_begin(), e = ds->decls_end(); iter != e; ++iter) {
     Decl* decl = *iter;
 
@@ -85,9 +85,9 @@ int main(int argc, char* argv[]) {
   std::string outputDir = argv[3];
   std::string builtinFileName;
 
-  std::unique_ptr<ostream> builtinHeaderFile = nullptr;
-  std::unique_ptr<ostream> builtinCodeFile = nullptr;
-  std::unique_ptr<ostream> emulateInlineTo = nullptr;
+  std::unique_ptr<std::ostream> builtinHeaderFile = nullptr;
+  std::unique_ptr<std::ostream> builtinCodeFile = nullptr;
+  std::unique_ptr<std::ostream> emulateInlineTo = nullptr;
 
   // Parse mode
   if (modeStr == "intfimpl") {
