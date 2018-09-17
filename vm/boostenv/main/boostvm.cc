@@ -58,6 +58,8 @@ BoostVM::BoostVM(BoostEnvironment& environment,
   // Make sure the IO thread will wait for us
   _work(new boost::asio::io_service::work(environment.io_service)) {
 
+  std::cout << "new VM: " << identifier << " parent=" << parent << std::endl;
+
   if (identifier != parent)
     addMonitor(parent);
 

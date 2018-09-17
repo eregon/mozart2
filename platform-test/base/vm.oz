@@ -3,6 +3,7 @@ import
    VM
    Module
    Property
+   System(show:Show)
 export
    Return
 define
@@ -80,13 +81,23 @@ define
 		  VM
 	       define
 		  {Send {VM.getPort Master} {VM.current}}
+		  {VM.getStream}.1 = done
+		  {Show dying#{VM.current}}
+		  {VM.closeStream}
 	       end
 	       S={VM.getStream}
 	       Other={VM.new F}
 	    in
-	       Other = 2
-	       {VM.list} = [1 2]
-	       S.1 = 2
+	       {Show Other}
+	       S.1 = Other
+	       {VM.list} = [{VM.current} Other]
+	       %{VM.monitor Other}
+	       {Send {VM.getPort Other} done}
+	       {Show S}
+	       {Show S.2}
+	       {Wait S.2}
+	       {Show after}
+	       S.2.1 = terminated(Other reason:normal)
 	    end
 	    keys:[mvm new stream])
 

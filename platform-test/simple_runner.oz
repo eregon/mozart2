@@ -87,7 +87,7 @@ define
 	 %{Show Test.keys}
 	 ActualTest = {TestProcedure Test}
       in
-	 {ActualTest}
+      for I in 1..10 do {ActualTest} end
 	 {Info '  OK'}
       end
       {NewLine}
